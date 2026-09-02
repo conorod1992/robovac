@@ -20,9 +20,9 @@ from datetime import timedelta
 import logging
 import asyncio
 import base64
+import binascii
 import json
 import time
-import ast
 
 from typing import Any
 from enum import IntEnum, StrEnum
@@ -352,20 +352,36 @@ class RoboVacEntity(StateVacuumEntity):
         # self.erro_msg? = self.tuyastatus.get("124")
         if self.robovac_supported & RoboVacEntityFeature.CONSUMABLES:
             for CONSUMABLE_CODE in TUYA_CONSUMABLES_CODES:
-                if (
-                    CONSUMABLE_CODE in self.tuyastatus
-                    and self.tuyastatus.get(CONSUMABLE_CODE) is not None
-                ):
-                    consumables = ast.literal_eval(
-                        base64.b64decode(self.tuyastatus.get(CONSUMABLE_CODE)).decode(
-                            "ascii"
-                        )
+                consumable_data = self.tuyastatus.get(CONSUMABLE_CODE)
+                if consumable_data is None:
+                    continue
+                if not isinstance(consumable_data, str):
+                    _LOGGER.debug(
+                        "Ignoring non-string consumables data for %s", self.unique_id
                     )
-                    if (
-                        "consumable" in consumables
-                        and "duration" in consumables["consumable"]
-                    ):
-                        self._attr_consumables = consumables["consumable"]["duration"]
+                    continue
+                try:
+                    consumables = json.loads(
+                        base64.b64decode(consumable_data).decode("ascii")
+                    )
+                except (
+                    binascii.Error,
+                    UnicodeDecodeError,
+                    json.JSONDecodeError,
+                    TypeError,
+                ):
+                    _LOGGER.debug(
+                        "Failed to decode consumables data for %s", self.unique_id
+                    )
+                    continue
+
+                consumable = (
+                    consumables.get("consumable")
+                    if isinstance(consumables, dict)
+                    else None
+                )
+                if isinstance(consumable, dict) and "duration" in consumable:
+                    self._attr_consumables = consumable["duration"]
 
     async def async_locate(self, **kwargs):
         """Locate the vacuum cleaner."""
