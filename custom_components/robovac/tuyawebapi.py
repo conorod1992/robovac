@@ -96,6 +96,7 @@ class TuyaAPISession:
         self.session.headers = DEFAULT_TUYA_HEADERS.copy()
         self.default_query_params = DEFAULT_TUYA_QUERY_PARAMS.copy()
         self.default_query_params["deviceId"] = self.generate_new_device_id()
+        self.default_query_params["timeZoneId"] = timezone
         self.username = username
         self.country_code = phone_code
         self.base_url = {
@@ -104,8 +105,6 @@ class TuyaAPISession:
             "IN": "https://a1.tuyain.com",
             "EU": "https://a1.tuyaeu.com",
         }.get(region, "https://a1.tuyaeu.com")
-
-        DEFAULT_TUYA_QUERY_PARAMS["timeZoneId"] = timezone
 
     @staticmethod
     def generate_new_device_id():
