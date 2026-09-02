@@ -126,6 +126,7 @@ class TuyaAPISession:
             lambda p: p[0] and p[0] in SIGNATURE_RELEVANT_PARAMETERS, sorted_pairs
         )
         mapped_pairs = map(
+            # postData is pre-emptively hashed (for performance reasons?), everything else is included as-is
             lambda p: p[0] + "=" + (shuffled_md5(p[1]) if p[0] == "postData" else p[1]),
             filtered_pairs,
         )
