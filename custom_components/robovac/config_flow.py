@@ -73,7 +73,7 @@ def get_eufy_vacuums(self):
 
     eufy_session = EufyLogon(self["username"], self["password"])
     response = eufy_session.get_user_info()
-    if response.status_code != 200:
+    if response is None or response.status_code != 200:
         raise CannotConnect
 
     user_response = response.json()
@@ -85,6 +85,8 @@ def get_eufy_vacuums(self):
         user_response["user_info"]["id"],
         user_response["access_token"],
     )
+    if response is None or response.status_code != 200:
+        raise CannotConnect
 
     device_response = response.json()
 
@@ -93,6 +95,9 @@ def get_eufy_vacuums(self):
         user_response["user_info"]["id"],
         user_response["access_token"],
     )
+    if response is None or response.status_code != 200:
+        raise CannotConnect
+
     settings_response = response.json()
 
     self[CONF_CLIENT_ID] = user_response["user_info"]["id"]

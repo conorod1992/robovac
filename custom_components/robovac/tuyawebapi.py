@@ -4,7 +4,7 @@ from hashlib import md5, sha256
 import hmac
 import json
 import math
-import random
+import secrets
 import string
 import time
 import uuid
@@ -14,6 +14,7 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 import requests
 
 TUYA_INITIAL_BASE_URL = "https://a1.tuyaeu.com"
+REQUEST_TIMEOUT = 10
 
 EUFY_HMAC_KEY = (
     "A_cepev5pfnhua4dkqkdpmnrdxx378mpjr_s8x78u7xwymasd9kqa7a73pjhxqsedaj".encode()
@@ -95,6 +96,7 @@ class TuyaAPISession:
         self.session.headers = DEFAULT_TUYA_HEADERS.copy()
         self.default_query_params = DEFAULT_TUYA_QUERY_PARAMS.copy()
         self.default_query_params["deviceId"] = self.generate_new_device_id()
+        self.default_query_params["timeZoneId"] = timezone
         self.username = username
         self.country_code = phone_code
         self.base_url = {
@@ -104,15 +106,13 @@ class TuyaAPISession:
             "EU": "https://a1.tuyaeu.com",
         }.get(region, "https://a1.tuyaeu.com")
 
-        DEFAULT_TUYA_QUERY_PARAMS["timeZoneId"] = timezone
-
     @staticmethod
     def generate_new_device_id():
         expected_length = 44
         base64_characters = string.ascii_letters + string.digits
         device_id_dependent_part = "8534c8ec0ed0"
         return device_id_dependent_part + "".join(
-            random.choice(base64_characters)
+            secrets.choice(base64_characters)
             for _ in range(expected_length - len(device_id_dependent_part))
         )
 
@@ -164,6 +164,7 @@ class TuyaAPISession:
                 "sign": self.get_signature(query_params, encoded_post_data),
             },
             data={"postData": encoded_post_data} if encoded_post_data else None,
+            timeout=REQUEST_TIMEOUT,
         )
         resp.raise_for_status()
         data = resp.json()
