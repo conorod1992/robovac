@@ -165,6 +165,11 @@ class RoboVac(TuyaDevice):
         self._connected = False
         self.last_pong = 0
 
+        ping_task = self._ping_task
+        self._ping_task = None
+        if ping_task is not None and ping_task is not asyncio.current_task():
+            ping_task.cancel()
+
         writer = self.writer
         self.writer = None
         self.reader = None
@@ -178,15 +183,19 @@ class RoboVac(TuyaDevice):
 
     async def async_get(self):
         """Get state only after a connection is established."""
+        # Connect first. Message construction registers a response listener, so
+        # doing it after a successful connection avoids leaking listeners when a
+        # connection attempt fails.
+        await self.async_connect()
+
         payload = {"gwId": self.gateway_id, "devId": self.device_id}
         encrypt = False if self.version < (3, 3) else True
         message = Message(Message.GET_COMMAND, payload, encrypt=encrypt, device=self)
 
-        # The original implementation queued the request before connecting, then
+        # The original implementation queued the request while disconnected and
         # async_recieve() returned immediately because _connected was still False.
-        # That race could leave the first poll with no state and the entity
-        # unavailable until a later refresh.
-        await self.async_connect()
+        # Waiting only after connection setup keeps the initial/reconnect poll
+        # attached to the response that was actually requested.
         self._queue.append(message)
         response = await self.async_recieve(message)
         if response is not None:
