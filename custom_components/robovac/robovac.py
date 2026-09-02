@@ -183,6 +183,10 @@ class RoboVac(TuyaDevice):
 
     async def async_get(self):
         """Get state only after a connection is established."""
+        if self._backoff is True:
+            self._LOGGER.debug("Skipping status poll while transport is backing off")
+            return
+
         # Connect first. Message construction registers a response listener, so
         # doing it after a successful connection avoids leaking listeners when a
         # connection attempt fails.
