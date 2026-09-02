@@ -15,6 +15,8 @@ eufyheaders = {
     "Accept-Encoding": "gzip",
 }
 
+REQUEST_TIMEOUT = 10
+
 
 class EufyLogon:
     def __init__(self, username, password):
@@ -30,16 +32,43 @@ class EufyLogon:
             "password": self.password,
         }
 
-        return requests.post(login_url, json=login_auth, headers=eufyheaders)
+        try:
+            headers = eufyheaders.copy()
+            return requests.post(
+                login_url,
+                json=login_auth,
+                headers=headers,
+                timeout=REQUEST_TIMEOUT,
+            )
+        except requests.exceptions.RequestException:
+            return None
 
     def get_user_settings(self, url, userid, token):
         setting_url = url + "/v1/user/setting"
-        eufyheaders["token"] = token
-        eufyheaders["id"] = userid
-        return requests.request("GET", setting_url, headers=eufyheaders, timeout=1.5)
+        headers = eufyheaders.copy()
+        headers["token"] = token
+        headers["id"] = userid
+        try:
+            return requests.request(
+                "GET",
+                setting_url,
+                headers=headers,
+                timeout=REQUEST_TIMEOUT,
+            )
+        except requests.exceptions.RequestException:
+            return None
 
     def get_device_info(self, url, userid, token):
         device_url = url + "/v1/device/list/devices-and-groups"
-        eufyheaders["token"] = token
-        eufyheaders["id"] = userid
-        return requests.request("GET", device_url, headers=eufyheaders)
+        headers = eufyheaders.copy()
+        headers["token"] = token
+        headers["id"] = userid
+        try:
+            return requests.request(
+                "GET",
+                device_url,
+                headers=headers,
+                timeout=REQUEST_TIMEOUT,
+            )
+        except requests.exceptions.RequestException:
+            return None
