@@ -62,8 +62,6 @@ from .robovac import (
     RoboVacEntityFeature,
 )
 
-from homeassistant.const import ATTR_BATTERY_LEVEL
-
 ATTR_BATTERY_ICON = "battery_icon"
 ATTR_ERROR = "error"
 ATTR_FAN_SPEED = "fan_speed"
@@ -135,6 +133,11 @@ class RoboVacEntity(StateVacuumEntity):
     def robovac_supported(self) -> str | None:
         """Return the supported features of the vacuum cleaner."""
         return self._attr_robovac_supported
+
+    @property
+    def battery_sensor_value(self) -> int | str | None:
+        """Return battery level for the dedicated battery sensor."""
+        return self._battery_level
 
     @property
     def mode(self) -> str | None:
@@ -255,7 +258,7 @@ class RoboVacEntity(StateVacuumEntity):
     def __init__(self, item) -> None:
         """Initialize Eufy Robovac"""
         super().__init__()
-        self._attr_battery_level = 0
+        self._battery_level = None
         self._attr_name = item[CONF_NAME]
         self._attr_unique_id = item[CONF_ID]
         self._attr_model_code = item[CONF_MODEL]
@@ -328,7 +331,7 @@ class RoboVacEntity(StateVacuumEntity):
         self.tuyastatus = self.vacuum._dps
 
         # for 15C
-        self._attr_battery_level = self.tuyastatus.get(TUYA_CODES.BATTERY_LEVEL)
+        self._battery_level = self.tuyastatus.get(TUYA_CODES.BATTERY_LEVEL)
         self.tuya_state = self.tuyastatus.get(TUYA_CODES.STATE)
         self.error_code = self.tuyastatus.get(TUYA_CODES.ERROR_CODE)
         self._attr_mode = self.tuyastatus.get(TUYA_CODES.MODE)
